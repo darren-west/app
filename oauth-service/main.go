@@ -26,7 +26,7 @@ func init() {
 func main() {
 	authenticator, ok := authenticator.Map[*authenticatorFlag]
 	if !ok {
-		logrus.Fatalf("implementation %s not imported", authenticatorFlag)
+		logrus.Fatalf("implementation %s not imported", *authenticatorFlag)
 	}
 	reader, err := config.NewReader(config.DefaultFileReader{})
 	if err != nil {

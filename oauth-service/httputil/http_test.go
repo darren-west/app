@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/darren-west/oauth-service/httputil"
+	"github.com/darren-west/app/oauth-service/httputil"
 	"github.com/stretchr/testify/assert"
 )
 
