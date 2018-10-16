@@ -6,17 +6,15 @@ import (
 	"net/http"
 
 	"github.com/darren-west/app/oauth-service/auth"
-	"github.com/darren-west/app/oauth-service/config"
-
-	_ "github.com/darren-west/app/oauth-service/authenticator/google"
-
 	"github.com/darren-west/app/oauth-service/authenticator"
+	_ "github.com/darren-west/app/oauth-service/authenticator/google"
+	"github.com/darren-west/app/oauth-service/config"
 	"github.com/sirupsen/logrus"
 )
 
 var (
 	configFlag        = flag.String("config", "config.json", "--config the path to the oauth2 configuration file")
-	authenticatorFlag = flag.String("authenticator", "google", "--authenticator the implementation to use")
+	authenticatorFlag = flag.String("authenticator", "google.com", "--authenticator the implementation to use")
 )
 
 func init() {
@@ -45,6 +43,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Fatal(http.ListenAndServe(":8080", h))
+	log.Fatal(http.ListenAndServe(":80", h))
 
 }

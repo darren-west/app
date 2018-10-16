@@ -1,0 +1,33 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: oauth-service
+spec:
+  selector:
+    app: oauth
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oauth-deployment
+  labels:
+    app: oauth
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: oauth
+  template:
+    metadata:
+      labels:
+        app: oauth
+    spec:
+      containers:
+      - name: oauth
+        image: app/oauth-service:1.0.0
+        ports:
+        - containerPort: 80

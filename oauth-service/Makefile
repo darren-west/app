@@ -1,5 +1,7 @@
+CONATINERNAME=oauth-service
+VERSION=1.0.0
 
-all: generate build test
+all: dependencies generate test build docker-build
 
 dependencies:
 	go mod download
@@ -11,7 +13,10 @@ generate:
 	go generate ./...
 
 build:
-	go build -o bin/server
+	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/server .
+
+docker-build:
+	docker build -t app/$(CONATINERNAME):$(VERSION) .
 
 clean:
 	rm -rf bin/*
