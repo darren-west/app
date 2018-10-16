@@ -1,0 +1,1 @@
+[![Build Status](https://travis-ci.org/darren-west/app.svg?branch=master)](https://travis-ci.org/darren-west/app)
