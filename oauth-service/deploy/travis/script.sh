@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 
-make dependencies generate test
+pushd oauth-service
+    make dependencies generate test
+popd
