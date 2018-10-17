@@ -2,13 +2,24 @@ kind: Service
 apiVersion: v1
 metadata:
   name: oauth-service
+  labels:
+    app: oauth
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v0
+      kind:  Mapping
+      name:  oauth_mapping
+      prefix: /login
+      rewrite: /login
+      service: oauth-service
 spec:
   selector:
     app: oauth
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 80
+    targetPort: http
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -29,5 +40,29 @@ spec:
       containers:
       - name: oauth
         image: app/oauth-service:1.0.0
+        args: ["--config", "/config/config.json"]
         ports:
-        - containerPort: 80
+        - name: http
+          containerPort: 80
+        volumeMounts:
+          - name: config
+            mountPath: /config/
+            readOnly: true
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 2
+          periodSeconds: 15
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: config
+        secret:
+         secretName: oauth-config
+
+

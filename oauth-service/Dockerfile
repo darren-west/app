@@ -1,5 +1,4 @@
 FROM scratch
-COPY config.json /
 COPY bin/server /
 
 ENTRYPOINT ["/server"]

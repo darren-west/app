@@ -43,6 +43,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Fatal(http.ListenAndServe(":80", h))
+	mux := http.NewServeMux()
+	mux.Handle("/", h)
+	mux.HandleFunc("/health", health)
+	log.Fatal(http.ListenAndServe(":80", mux))
+}
 
+func health(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK) // TODO: think of any unhealthy situations other than the http server not handling traffic.
 }
