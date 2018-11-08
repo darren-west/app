@@ -1,0 +1,8 @@
+{
+    "BindAddress":":80",
+    "MongoSession": {
+      "EncryptKey":"RANDOM",
+      "ConnectionString":"mongodb://session-mongodb-0.session-mongodb,session-mongodb-1.session-mongodb",
+      "DatabaseName":"SessionData"
+    }
+}

@@ -8,6 +8,10 @@ import (
 	mgo "gopkg.in/mgo.v2"
 )
 
+const (
+	UserSessionName = "user-data"
+)
+
 func NewMongoStore(options Options) (store *mongostore.MongoStore, err error) {
 	session, err := mgo.Dial(options.ConnectionString)
 	if err != nil {
