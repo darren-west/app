@@ -14,16 +14,11 @@ func WithHandlerLogging(l *logrus.Logger, h http.Handler) http.Handler {
 		id := uuid.New().String()
 		decorateLogWithRequest(l, r).WithField("id", id).Debug("incoming request")
 		h.ServeHTTP(w, r)
-		decorateLogWithResponse(l, r).WithField("id", id).Debug("outgoing response")
+		l.WithField("id", id).Debug("outgoing response")
 	})
 }
 
 func decorateLogWithRequest(l *logrus.Logger, r *http.Request) *logrus.Entry {
 	data, _ := httputil.DumpRequest(r, true)
-	return l.WithField("http request", string(data))
-}
-
-func decorateLogWithResponse(l *logrus.Logger, r *http.Request) *logrus.Entry {
-	data, _ := httputil.DumpResponse(r.Response, true)
 	return l.WithField("http request", string(data))
 }
