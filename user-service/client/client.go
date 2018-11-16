@@ -61,8 +61,8 @@ func (s Service) CreateUser(ctx context.Context, user models.UserInfo) (err erro
 	if err != nil {
 		return
 	}
-	if err = HandleError(http.StatusCreated, resp); err != nil {
-		return
+	if httpErr := HandleError(http.StatusCreated, resp); httpErr != nil {
+		return httpErr
 	}
 	return
 }
@@ -76,13 +76,22 @@ func (s Service) GetUser(ctx context.Context, id string) (user models.UserInfo, 
 	if err != nil {
 		return
 	}
-	if err = HandleError(http.StatusOK, resp); err != nil {
-		return
+	if httpErr := HandleError(http.StatusOK, resp); httpErr != nil {
+		return user, httpErr
 	}
 	if err = json.NewDecoder(resp.Body).Decode(&user); err != nil {
 		return
 	}
 	return
+}
+
+func IsNotFoundError(err error) bool {
+	if e, ok := err.(*Error); ok {
+		if e.StatusCode == http.StatusNotFound {
+			return true
+		}
+	}
+	return false
 }
 
 func (s Service) ListUsers(ctx context.Context) (users []models.UserInfo, err error) {
@@ -94,8 +103,8 @@ func (s Service) ListUsers(ctx context.Context) (users []models.UserInfo, err er
 	if err != nil {
 		return
 	}
-	if err = HandleError(http.StatusOK, resp); err != nil {
-		return
+	if httpErr := HandleError(http.StatusOK, resp); httpErr != nil {
+		return nil, httpErr
 	}
 	if err = json.NewDecoder(resp.Body).Decode(&users); err != nil {
 		return
@@ -116,8 +125,8 @@ func (s Service) UpdateUser(ctx context.Context, user models.UserInfo) (err erro
 	if err != nil {
 		return
 	}
-	if err = HandleError(http.StatusOK, resp); err != nil {
-		return
+	if httpErr := HandleError(http.StatusOK, resp); httpErr != nil {
+		return httpErr
 	}
 	return
 }
@@ -131,24 +140,38 @@ func (s Service) DeleteUser(ctx context.Context, id string) (err error) {
 	if err != nil {
 		return
 	}
-	if err = HandleError(http.StatusOK, resp); err != nil {
-		return
+	if httpErr := HandleError(http.StatusOK, resp); httpErr != nil {
+		return httpErr
 	}
 	return
 }
 
-func HandleError(expected int, resp *http.Response) (err error) {
+type Error struct {
+	StatusCode int
+	Message    string
+}
+
+func (e *Error) Error() string {
+	if e.Message == "" {
+		return fmt.Sprintf("status code %d", e.StatusCode)
+	}
+	return fmt.Sprintf("status code %d, message %s", e.StatusCode, e.Message)
+}
+
+func HandleError(expected int, resp *http.Response) *Error {
 	if resp.StatusCode != expected {
+		httpErr := &Error{
+			StatusCode: resp.StatusCode,
+		}
 		if resp.Body != nil {
 			data, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
-				message := string(data)
-				return fmt.Errorf("status code %d, message %s", resp.StatusCode, message)
+				httpErr.Message = string(data)
 			}
 		}
-		return fmt.Errorf("status code %d", resp.StatusCode)
+		return httpErr
 	}
-	return
+	return nil
 }
 
 func (s Service) newRequest(ctx context.Context, method string, path string, r io.Reader) (*http.Request, error) {
