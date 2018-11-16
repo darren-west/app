@@ -51,7 +51,7 @@ func TestReader(t *testing.T) {
 	assert.Equal(t, "/Login", conf.LoginRoutePath)
 	assert.Equal(t, "/Redirect", conf.RedirectRoutePath)
 
-	assert.Equal(t, "KEY", conf.MongoSession.EncryptionKey)
+	assert.Equal(t, "KEY", conf.MongoSession.EncryptKey)
 	assert.Equal(t, "mongodb://database", conf.MongoSession.ConnectionString)
 	assert.Equal(t, "db", conf.MongoSession.DatabaseName)
 
@@ -103,7 +103,7 @@ func TestReaderCaseInsensitive(t *testing.T) {
 	assert.Equal(t, "/Login", conf.LoginRoutePath)
 	assert.Equal(t, "/Redirect", conf.RedirectRoutePath)
 
-	assert.Equal(t, "KEY", conf.MongoSession.EncryptionKey)
+	assert.Equal(t, "KEY", conf.MongoSession.EncryptKey)
 	assert.Equal(t, "mongodb://database", conf.MongoSession.ConnectionString)
 	assert.Equal(t, "db", conf.MongoSession.DatabaseName)
 

@@ -2,7 +2,7 @@ module github.com/darren-west/app/oauth-service
 
 require (
 	github.com/darren-west/app/session v0.0.0-20181026151129-75678e0b758f
-	github.com/darren-west/app/utils v0.0.0-20181108155929-bd4b5b0bd3f6
+	github.com/darren-west/app/utils v0.0.0-20181116113853-806c67e1bf85
 	github.com/go-playground/locales v0.12.1 // indirect
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/golang/mock v1.1.1

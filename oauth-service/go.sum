@@ -5,6 +5,7 @@ github.com/darren-west/app/utils v0.0.0-20181108145144-e33d9544391b h1:A/lK0yfqY
 github.com/darren-west/app/utils v0.0.0-20181108145144-e33d9544391b/go.mod h1:zhFz8YTk2RVAXq113aJuE82eFNeZ7sw7boft6/zakK4=
 github.com/darren-west/app/utils v0.0.0-20181108155929-bd4b5b0bd3f6 h1:5K4HnGOn/aq7xPbqhC1NJNnUl1WyFdx9NhTBK0Ef16o=
 github.com/darren-west/app/utils v0.0.0-20181108155929-bd4b5b0bd3f6/go.mod h1:zhFz8YTk2RVAXq113aJuE82eFNeZ7sw7boft6/zakK4=
+github.com/darren-west/app/utils v0.0.0-20181116113853-806c67e1bf85/go.mod h1:zhFz8YTk2RVAXq113aJuE82eFNeZ7sw7boft6/zakK4=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-playground/locales v0.12.1 h1:2FITxuFt/xuCNP1Acdhv62OzaCiviiE4kotfhkmOqEc=
