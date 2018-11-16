@@ -1,0 +1,72 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v0
+      kind:  Mapping
+      name:  auth_mapping
+      prefix: /api/auth/
+      rewrite: /
+      service: auth-service
+      # TODO: remove this as it shouldnt be accessible outside. Just for testing.
+
+spec:
+  selector:
+    app: auth
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: http
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment
+  labels:
+    app: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+      - name: auth
+        image: app/auth-service:1.0.0
+        ports:
+        - name: http
+          containerPort: 80
+        volumeMounts:
+          - name: keys
+            mountPath: /keys/
+            readOnly: true
+        # readinessProbe:
+        #   httpGet:
+        #     path: /health
+        #     port: http
+        #   initialDelaySeconds: 2
+        #   periodSeconds: 15
+        # livenessProbe:
+        #   httpGet:
+        #     path: /health
+        #     port: http
+        #   initialDelaySeconds: 5
+        #   periodSeconds: 10
+
+      volumes:
+      - name: keys
+        secret:
+         secretName: auth-private-key
+
+
