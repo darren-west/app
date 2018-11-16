@@ -9,7 +9,7 @@ go:
 - "1.11.x"
 
 install:
-  
+  - export GO111MODULE=on
 script:
   - ./oauth-service/deploy/travis/script.sh
   - ./user-service/deploy/travis/script.sh
