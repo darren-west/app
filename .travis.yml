@@ -10,6 +10,8 @@ go:
 
 install:
   - export GO111MODULE=on
+  - go get github.com/golang/mock/gomock
+  - go install github.com/golang/mock/mockgen
 script:
   - ./oauth-service/deploy/travis/script.sh
   - ./user-service/deploy/travis/script.sh
