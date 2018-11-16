@@ -130,6 +130,22 @@ func (cs ClientSuite) TestDeleteUserError() {
 	cs.Assert().EqualError(s.DeleteUser(context.TODO(), expected), "status code 404, message fire, fire")
 }
 
+func (cs ClientSuite) TestGetUser() {
+	expected := models.UserInfo{ID: "123", FirstName: "foo", LastName: "bar", Email: "email@email.com"}
+	fn := func(r *http.Request) (resp *http.Response, err error) {
+		resp = new(http.Response)
+		resp.StatusCode = http.StatusOK
+		buf := &bytes.Buffer{}
+		cs.Require().NoError(json.NewEncoder(buf).Encode(expected))
+		resp.Body = ioutil.NopCloser(buf)
+		return
+	}
+	s := client.New(client.WithHTTPClient(NewTestClient(fn)))
+	user, err := s.GetUser(context.TODO(), expected.ID)
+	cs.Assert().NoError(err)
+
+	cs.Assert().Equal(expected, user)
+}
 func (cs ClientSuite) decodeUser(r *http.Request) (user models.UserInfo) {
 	cs.Require().NoError(json.NewDecoder(r.Body).Decode(&user))
 	return

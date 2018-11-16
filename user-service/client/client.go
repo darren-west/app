@@ -20,7 +20,7 @@ func WithTargetAddress(target string) Option {
 
 func WithHTTPClient(c *http.Client) Option {
 	return func(s *Service) {
-		s.Client = c
+		s.httpClient = c
 	}
 }
 
@@ -31,7 +31,7 @@ func New(ops ...Option) Service {
 		options: Options{
 			TargetAddress: "http://localhost",
 		},
-		Client: http.DefaultClient,
+		httpClient: http.DefaultClient,
 	}
 	for _, op := range ops {
 		op(&s)
@@ -44,8 +44,8 @@ type Options struct {
 }
 
 type Service struct {
-	options Options
-	*http.Client
+	options    Options
+	httpClient *http.Client
 }
 
 func (s Service) CreateUser(ctx context.Context, user models.UserInfo) (err error) {
@@ -57,11 +57,29 @@ func (s Service) CreateUser(ctx context.Context, user models.UserInfo) (err erro
 	if err != nil {
 		return
 	}
-	resp, err := s.Client.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return
 	}
 	if err = HandleError(http.StatusCreated, resp); err != nil {
+		return
+	}
+	return
+}
+
+func (s Service) GetUser(ctx context.Context, id string) (user models.UserInfo, err error) {
+	req, err := s.newRequest(ctx, http.MethodGet, fmt.Sprintf("users/%s", id), nil)
+	if err != nil {
+		return
+	}
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return
+	}
+	if err = HandleError(http.StatusOK, resp); err != nil {
+		return
+	}
+	if err = json.NewDecoder(resp.Body).Decode(&user); err != nil {
 		return
 	}
 	return
@@ -72,7 +90,7 @@ func (s Service) ListUsers(ctx context.Context) (users []models.UserInfo, err er
 	if err != nil {
 		return
 	}
-	resp, err := s.Client.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return
 	}
@@ -94,7 +112,7 @@ func (s Service) UpdateUser(ctx context.Context, user models.UserInfo) (err erro
 	if err != nil {
 		return
 	}
-	resp, err := s.Client.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return
 	}
@@ -109,7 +127,7 @@ func (s Service) DeleteUser(ctx context.Context, id string) (err error) {
 	if err != nil {
 		return
 	}
-	resp, err := s.Client.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return
 	}
