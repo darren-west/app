@@ -8,6 +8,8 @@ services:
 go:
 - "1.11.x"
 
+install:
+  
 script:
   - ./oauth-service/deploy/travis/script.sh
   - ./user-service/deploy/travis/script.sh
