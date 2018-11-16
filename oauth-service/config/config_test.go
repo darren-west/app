@@ -16,9 +16,10 @@ func TestReader(t *testing.T) {
 		"BindAddress":":80",
 		"LoginRoutePath":"/Login",
 		"RedirectRoutePath":"/Redirect",
+		"APIEndpoint":"www.foo.com",
 		"MongoSession": {
 			"Name": "session",
-			"EncryptionKey":"KEY",
+			"EncryptKey":"KEY",
 			"ConnectionString":"mongodb://database",
 			"DatabaseName":"db"
 		},
@@ -68,9 +69,10 @@ func TestReaderCaseInsensitive(t *testing.T) {
 		"bindAddress":":80",
 		"loginRoutePath":"/Login",
 		"redirectRoutePath":"/Redirect",
+		"apiEndpoint":"www.foo.com",
 		"mongoSession": {
 			"name":"session",
-			"encryptionKey":"KEY",
+			"encryptKey":"KEY",
 			"connectionString":"mongodb://database",
 			"databaseName":"db"
 		},
@@ -135,8 +137,7 @@ func TestConfigValidation(t *testing.T) {
 		"loginRoutePath":"/Login",
 		"redirectRoutePath":"/Redirect",
 		"mongoSession": {
-			"name": "session",
-			"encryptionKey":"KEY",
+			"encryptKey":"KEY",
 			"connectionString":"mongodb://database",
 			"databaseName":"db"
 		},
@@ -163,16 +164,17 @@ func TestConfigValidation(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = reader.Read("/foo/path.config")
-	assert.EqualError(t, err, "configuration invalid, required fields: [BindAddress]")
+	assert.EqualError(t, err, "configuration invalid: required field bind address missing")
 }
 
 func TestConfigValidationMissingOAuth(t *testing.T) {
 	testData := `{
+		"bindAddress":":80",
 		"loginRoutePath":"/Login",
 		"redirectRoutePath":"/Redirect",
 		"mongoSession": {
 			"name": "session",
-			"encryptionKey":"KEY",
+			"encryptKey":"KEY",
 			"connectionString":"mongodb://database",
 			"databaseName":"db"
 		},
@@ -189,17 +191,5 @@ func TestConfigValidationMissingOAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = reader.Read("/foo/path.config")
-	assert.EqualError(t, err, "configuration invalid, required fields: [BindAddress OAuth]")
-}
-
-func TestConfigValidationMissingAll(t *testing.T) {
-	testData := `{
-	}`
-	mockFileReader := mocks.NewMockFileReader(gomock.NewController(t))
-	mockFileReader.EXPECT().Read("/foo/path.config").Return([]byte(testData), nil)
-	reader, err := config.NewReader(mockFileReader)
-	require.NoError(t, err)
-
-	_, err = reader.Read("/foo/path.config")
-	assert.EqualError(t, err, "configuration invalid, required fields: [BindAddress LoginRoutePath RedirectRoutePath OAuth Name ConnectionString DatabaseName EncryptionKey ID FirstName LastName EmailAddress]")
+	assert.EqualError(t, err, "configuration invalid: required field oauth missing")
 }

@@ -60,10 +60,45 @@ type Options struct {
 	UserMapping       UserMapping
 }
 
+func (o Options) IsValid() (err error) {
+	if o.BindAddress == "" {
+		return errors.New("required field bind address missing")
+	}
+	if o.LoginRoutePath == "" {
+		return errors.New("required field login route path missing")
+	}
+	if o.RedirectRoutePath == "" {
+		return errors.New("required field redirect route path missing")
+	}
+	if o.OAuth == nil {
+		return errors.New("required field oauth missing")
+	}
+	if o.APIEndpoint == "" {
+		return errors.New("required field api endpoint missing")
+	}
+	return
+}
+
 // UserMapping are the options for configuring the marshalling of the returned user.
 type UserMapping struct {
 	ID           string
 	FirstName    string
 	LastName     string
 	EmailAddress string
+}
+
+func (um UserMapping) IsValid() (err error) {
+	if um.ID == "" {
+		return errors.New("required field user mapping id missing")
+	}
+	if um.FirstName == "" {
+		return errors.New("required field user mapping first name missing")
+	}
+	if um.LastName == "" {
+		return errors.New("required field user mapping last name missing")
+	}
+	if um.EmailAddress == "" {
+		return errors.New("required field user mapping email missing")
+	}
+	return
 }
