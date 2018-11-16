@@ -1,0 +1,123 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: user-service-cr
+rules:
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: user-service-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: user-service-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: user-service-cr
+subjects:
+- kind: ServiceAccount
+  name: user-service-sa
+  namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service-mongo
+  labels:
+    name: user-service-mongo
+    app: user-service
+spec:
+  ports:
+  - port: 27017
+    targetPort: 27017
+  clusterIP: None
+  selector:
+    app: user-service
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: user-service
+  labels:
+    app: user-service
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v0
+      kind:  Mapping
+      name:  user_mapping
+      prefix: /api/users
+      rewrite: /users
+      service: user-service
+
+spec:
+  selector:
+    app: user-service
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: http
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: user-service
+spec:
+  serviceName: "user-service-mongo"
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: user-service
+        role: mongo
+        environment: test
+    spec:
+      serviceAccountName: user-service-sa
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: mongo
+        image: mongo
+        command:
+        - mongod
+        - "--replSet"
+        - rs0
+        - "--smallfiles"
+        - "--noprealloc"
+        - "--port"
+        - "27017"
+        - "--bind_ip"
+        - "0.0.0.0"
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: user-service-persistent-storage
+          mountPath: /data/db
+      - name: mongo-sidecar
+        image: cvallance/mongo-k8s-sidecar
+        env:
+        - name: MONGO_SIDECAR_POD_LABELS
+          value: "role=mongo,environment=test"
+      - name: users
+        image: app/user-service:1.0.0
+        ports:
+        - name: http
+          containerPort: 80
+  volumeClaimTemplates:
+  - metadata:
+      name: user-service-persistent-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: manual

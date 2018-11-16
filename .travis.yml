@@ -1,7 +1,13 @@
 language: go
 
+sudo: required
+
+services:
+  - docker
+
 go:
 - "1.11.x"
 
 script:
   - ./oauth-service/deploy/travis/script.sh
+  - ./user-service/deploy/travis/script.sh
