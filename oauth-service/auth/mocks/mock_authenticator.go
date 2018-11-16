@@ -35,13 +35,13 @@ func (m *MockAuthenticator) EXPECT() *MockAuthenticatorMockRecorder {
 }
 
 // OnAuthenticated mocks base method
-func (m *MockAuthenticator) OnAuthenticated(arg0 http.ResponseWriter, arg1 auth.UserInfo) {
-	m.ctrl.Call(m, "OnAuthenticated", arg0, arg1)
+func (m *MockAuthenticator) OnAuthenticated(arg0 http.ResponseWriter, arg1 *http.Request, arg2 auth.UserInfo) {
+	m.ctrl.Call(m, "OnAuthenticated", arg0, arg1, arg2)
 }
 
 // OnAuthenticated indicates an expected call of OnAuthenticated
-func (mr *MockAuthenticatorMockRecorder) OnAuthenticated(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnAuthenticated", reflect.TypeOf((*MockAuthenticator)(nil).OnAuthenticated), arg0, arg1)
+func (mr *MockAuthenticatorMockRecorder) OnAuthenticated(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnAuthenticated", reflect.TypeOf((*MockAuthenticator)(nil).OnAuthenticated), arg0, arg1, arg2)
 }
 
 // RetrieveUser mocks base method

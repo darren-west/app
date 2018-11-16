@@ -5,16 +5,17 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/darren-west/app/utils/fileutil"
+	"github.com/darren-west/app/utils/session"
+
 	"github.com/darren-west/app/oauth-service/auth"
-	"github.com/darren-west/app/oauth-service/authenticator"
-	_ "github.com/darren-west/app/oauth-service/authenticator/google"
 	"github.com/darren-west/app/oauth-service/config"
+	"github.com/darren-west/app/oauth-service/redirector"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	configFlag        = flag.String("config", "config.json", "--config the path to the oauth2 configuration file")
-	authenticatorFlag = flag.String("authenticator", "google.com", "--authenticator the implementation to use")
+	configFlag = flag.String("config", "config.json", "--config the path to the oauth2 configuration file")
 )
 
 func init() {
@@ -22,11 +23,7 @@ func init() {
 }
 
 func main() {
-	authenticator, ok := authenticator.Map[*authenticatorFlag]
-	if !ok {
-		logrus.Fatalf("implementation %s not imported", *authenticatorFlag)
-	}
-	reader, err := config.NewReader(config.DefaultFileReader{})
+	reader, err := config.NewReader(fileutil.FileReader{})
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -35,10 +32,15 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	store, err := session.NewMongoStore(config.MongoSession)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	h, err := auth.NewHandler(
-		auth.WithOauth2Config(config),
-		auth.WithAuthenticator(authenticator),
-		auth.WithRedirectPattern("/auth"),
+		auth.WithConfig(config),
+		auth.WithSessionStore(store),
+		auth.WithLoginHandler(redirector.Login{Store: store}),
 	)
 	if err != nil {
 		log.Fatal(err)

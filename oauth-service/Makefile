@@ -4,16 +4,16 @@ VERSION=1.0.0
 all: dependencies generate test build docker-build
 
 dependencies:
-	go mod download
+	GO111MODULE=on go mod download
 
 test:
-	go test ./... --cover
+	GO111MODULE=on go test ./... --cover
 
 generate:
-	go generate ./...
+	GO111MODULE=on go generate ./...
 
 build:
-	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/server .
+	GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/server .
 
 docker-build:
 	docker build -t app/$(CONATINERNAME):$(VERSION) .

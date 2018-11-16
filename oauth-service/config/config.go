@@ -4,20 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+
+	"github.com/darren-west/app/utils/session"
+	"github.com/darren-west/app/utils/validator"
 
 	"golang.org/x/oauth2"
 )
 
 //go:generate mockgen -destination ./mocks/mock_reader.go -package mocks github.com/darren-west/app/oauth-service/config FileReader
-
-// DefaultFileReader wraps ioutil.ReadFile call to read a file into a byte array.
-type DefaultFileReader struct{}
-
-// Read reads the file at the path given.
-func (DefaultFileReader) Read(path string) ([]byte, error) {
-	return ioutil.ReadFile(path)
-}
 
 // FileReader reads a files content into a byte array.
 type FileReader interface {
@@ -30,14 +24,18 @@ type Reader struct {
 }
 
 // Read reads the config in the file and returns the oauth2 config.
-func (r Reader) Read(path string) (config *oauth2.Config, err error) {
+func (r Reader) Read(path string) (config Options, err error) {
+	//config = defaultConfig
 	data, err := r.fileReader.Read(path)
 	if err != nil {
 		err = fmt.Errorf("failed to read file: %s", err)
 		return
 	}
-	config = new(oauth2.Config)
-	if err = json.Unmarshal(data, config); err != nil {
+	if err = json.Unmarshal(data, &config); err != nil {
+		return
+	}
+	if err = validator.Default.IsValid(&config); err != nil {
+		err = fmt.Errorf("configuration invalid: %s", err)
 		return
 	}
 	return
@@ -49,4 +47,23 @@ func NewReader(fileReader FileReader) (Reader, error) {
 		return Reader{}, errors.New("file reader is nil")
 	}
 	return Reader{fileReader: fileReader}, nil
+}
+
+// Options is a struct containing the options for configuring the service.
+type Options struct {
+	BindAddress       string
+	LoginRoutePath    string
+	RedirectRoutePath string
+	OAuth             *oauth2.Config
+	MongoSession      session.Options
+	APIEndpoint       string
+	UserMapping       UserMapping
+}
+
+// UserMapping are the options for configuring the marshalling of the returned user.
+type UserMapping struct {
+	ID           string
+	FirstName    string
+	LastName     string
+	EmailAddress string
 }
