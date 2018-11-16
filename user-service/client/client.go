@@ -12,6 +12,12 @@ import (
 	"github.com/darren-west/app/user-service/models"
 )
 
+func WithTargetAddress(target string) Option {
+	return func(s *Service) {
+		s.options.TargetAddress = target
+	}
+}
+
 func WithHTTPClient(c *http.Client) Option {
 	return func(s *Service) {
 		s.Client = c
