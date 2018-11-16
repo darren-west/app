@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/darren-west/app/utils/httputil"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -54,7 +53,7 @@ func (e *httpErr) WithError(err error) Error {
 	return e.WithMessage(err.Error())
 }
 
-type ErrorHandle func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (err httputil.Error)
+type ErrorHandle func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (err Error)
 
 func UseErrorHandle(f ErrorHandle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

@@ -15,4 +15,4 @@ install:
 script:
   - ./oauth-service/deploy/travis/script.sh
   - ./user-service/deploy/travis/script.sh
-  - ./utils/deploy/script.sh
+  - ./utils/deploy/travis/script.sh
