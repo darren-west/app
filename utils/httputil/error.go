@@ -3,6 +3,9 @@ package httputil
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/darren-west/app/utils/httputil"
+	"github.com/julienschmidt/httprouter"
 )
 
 type (
@@ -49,4 +52,16 @@ func (e *httpErr) WithMessage(format string, a ...interface{}) Error {
 
 func (e *httpErr) WithError(err error) Error {
 	return e.WithMessage(err.Error())
+}
+
+type ErrorHandle func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (err httputil.Error)
+
+func UseErrorHandle(f ErrorHandle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		if err := f(w, r, ps); err != nil {
+			err.Write(w)
+			return
+		}
+
+	}
 }
