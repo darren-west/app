@@ -7,8 +7,8 @@ import (
 
 	"github.com/darren-west/app/utils/httputil"
 	"github.com/darren-west/app/utils/jwt"
-	"github.com/go-resty/resty"
 	"github.com/hashicorp/errwrap"
+	"gopkg.in/resty.v1"
 )
 
 // WithBaseAddress is the base address for the client to use.

@@ -7,7 +7,7 @@ import (
 
 	"github.com/darren-west/app/user-service/models"
 	"github.com/darren-west/app/utils/httputil"
-	"github.com/go-resty/resty"
+	"gopkg.in/resty.v1"
 	"github.com/hashicorp/errwrap"
 )
 
