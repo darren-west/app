@@ -6,4 +6,5 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/julienschmidt/httprouter v1.2.0
 	github.com/sirupsen/logrus v1.2.0
+	gopkg.in/resty.v1 v1.10.2
 )

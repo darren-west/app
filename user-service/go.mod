@@ -19,5 +19,6 @@ require (
 	golang.org/x/net v0.0.0-20181108082009-03003ca0c849 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
+	gopkg.in/resty.v1 v1.10.2
 	gopkg.in/yaml.v2 v2.2.1 // indirect
 )
