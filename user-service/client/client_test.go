@@ -10,7 +10,6 @@ import (
 
 	"github.com/darren-west/app/user-service/client"
 	"github.com/darren-west/app/user-service/models"
-
 	"github.com/stretchr/testify/suite"
 )
 
@@ -26,12 +25,13 @@ func (cs *ClientSuite) TestCreateUser() {
 	expected := models.UserInfo{ID: "12345", FirstName: "foo", LastName: "bar", Email: "email@email.com"}
 	fn := func(r *http.Request) (resp *http.Response, err error) {
 		resp = new(http.Response)
+		resp.Body = ioutil.NopCloser(&bytes.Buffer{})
 		user := cs.decodeUser(r)
 		cs.Assert().Equal(expected, user)
 		resp.StatusCode = http.StatusCreated
 		return
 	}
-	s := client.New(client.WithHTTPClient(NewTestClient(fn)))
+	s := client.New(client.WithRoundTripper(RoundTripFunc(fn)))
 	err := s.CreateUser(context.TODO(), expected)
 	cs.Assert().NoError(err)
 }
@@ -44,9 +44,9 @@ func (cs *ClientSuite) TestCreateUserError() {
 		resp.Body = ioutil.NopCloser(bytes.NewBuffer([]byte("boom")))
 		return
 	}
-	s := client.New(client.WithHTTPClient(NewTestClient(fn)))
+	s := client.New(client.WithRoundTripper(RoundTripFunc(fn)))
 	err := s.CreateUser(context.TODO(), models.UserInfo{ID: "12345", FirstName: "foo", LastName: "bar", Email: "email@email.com"})
-	cs.Assert().EqualError(err, "status code 500, message boom")
+	cs.Assert().EqualError(err, "create user failed: boom, code 500")
 }
 
 func (cs *ClientSuite) TestListUsers() {
@@ -71,9 +71,11 @@ func (cs *ClientSuite) TestListUsers() {
 		buf := &bytes.Buffer{}
 		cs.Require().NoError(json.NewEncoder(buf).Encode(expected))
 		resp.Body = ioutil.NopCloser(buf)
+		resp.Header = make(map[string][]string)
+		resp.Header.Set("Content-Type", "application/json")
 		return
 	}
-	s := client.New(client.WithHTTPClient(NewTestClient(fn)))
+	s := client.New(client.WithRoundTripper(RoundTripFunc(fn)))
 	users, err := s.ListUsers(context.TODO())
 	cs.Assert().NoError(err)
 	cs.Assert().Len(users, 2)
@@ -87,10 +89,11 @@ func (cs ClientSuite) TestUpdateUser() {
 		resp = new(http.Response)
 		user := cs.decodeUser(r)
 		cs.Assert().Equal(expected, user)
+		resp.Body = ioutil.NopCloser(&bytes.Buffer{})
 		resp.StatusCode = http.StatusOK
 		return
 	}
-	s := client.New(client.WithHTTPClient(NewTestClient(fn)))
+	s := client.New(client.WithRoundTripper(RoundTripFunc(fn)))
 	cs.Assert().NoError(s.UpdateUser(context.TODO(), expected))
 }
 
@@ -102,8 +105,8 @@ func (cs ClientSuite) TestUpdateUserError() {
 		resp.Body = ioutil.NopCloser(bytes.NewBuffer([]byte("boom")))
 		return
 	}
-	s := client.New(client.WithHTTPClient(NewTestClient(fn)))
-	cs.Assert().EqualError(s.UpdateUser(context.TODO(), expected), "status code 500, message boom")
+	s := client.New(client.WithRoundTripper(RoundTripFunc(fn)))
+	cs.Assert().EqualError(s.UpdateUser(context.TODO(), expected), "update user failed: boom, code 500")
 }
 
 func (cs ClientSuite) TestDeleteUser() {
@@ -111,10 +114,11 @@ func (cs ClientSuite) TestDeleteUser() {
 	fn := func(r *http.Request) (resp *http.Response, err error) {
 		resp = new(http.Response)
 		resp.StatusCode = http.StatusOK
+		resp.Body = ioutil.NopCloser(&bytes.Buffer{})
 		cs.Assert().Equal("/users/123", r.URL.Path)
 		return
 	}
-	s := client.New(client.WithHTTPClient(NewTestClient(fn)))
+	s := client.New(client.WithRoundTripper(RoundTripFunc(fn)))
 	cs.Assert().NoError(s.DeleteUser(context.TODO(), expected))
 }
 
@@ -126,8 +130,8 @@ func (cs ClientSuite) TestDeleteUserError() {
 		resp.Body = ioutil.NopCloser(bytes.NewBuffer([]byte("fire, fire")))
 		return
 	}
-	s := client.New(client.WithHTTPClient(NewTestClient(fn)))
-	cs.Assert().EqualError(s.DeleteUser(context.TODO(), expected), "status code 404, message fire, fire")
+	s := client.New(client.WithRoundTripper(RoundTripFunc(fn)))
+	cs.Assert().EqualError(s.DeleteUser(context.TODO(), expected), "delete user failed: fire, fire, code 404")
 }
 
 func (cs ClientSuite) TestGetUser() {
@@ -137,10 +141,12 @@ func (cs ClientSuite) TestGetUser() {
 		resp.StatusCode = http.StatusOK
 		buf := &bytes.Buffer{}
 		cs.Require().NoError(json.NewEncoder(buf).Encode(expected))
+		resp.Header = make(map[string][]string)
+		resp.Header.Set("Content-Type", "application/json")
 		resp.Body = ioutil.NopCloser(buf)
 		return
 	}
-	s := client.New(client.WithHTTPClient(NewTestClient(fn)))
+	s := client.New(client.WithRoundTripper(RoundTripFunc(fn)))
 	user, err := s.GetUser(context.TODO(), expected.ID)
 	cs.Assert().NoError(err)
 

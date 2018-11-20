@@ -4,6 +4,8 @@ github.com/darren-west/app/user-service v0.0.0-20181116142938-ab0bccd74720/go.mo
 github.com/darren-west/app/utils v0.0.0-20181115152030-d28b3081ca4c/go.mod h1:zhFz8YTk2RVAXq113aJuE82eFNeZ7sw7boft6/zakK4=
 github.com/darren-west/app/utils v0.0.0-20181116142938-ab0bccd74720 h1:ncRT7vyHGdd5vfgWm6LKRSs5K1TyE/8hL0yk1sjg97A=
 github.com/darren-west/app/utils v0.0.0-20181116142938-ab0bccd74720/go.mod h1:zhFz8YTk2RVAXq113aJuE82eFNeZ7sw7boft6/zakK4=
+github.com/darren-west/app/utils v0.0.0-20181116154356-1025072d162e h1:j6LVRRS51aHa1Qq6JFqMrkkzJcX8FRBY4jtAJ6fEaRA=
+github.com/darren-west/app/utils v0.0.0-20181116154356-1025072d162e/go.mod h1:zhFz8YTk2RVAXq113aJuE82eFNeZ7sw7boft6/zakK4=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=

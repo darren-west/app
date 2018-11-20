@@ -10,7 +10,7 @@ import (
 
 func main() {
 	router := httprouter.New()
-	if err := http.ListenAndServe(":80", controller.NewHandler("/keys/app.rsa", router)); err != nil {
+	if err := http.ListenAndServe(":80", controller.NewHandler("../utils/jwt/testdata/app.rsa", router)); err != nil {
 		logrus.Error(err)
 	}
 }

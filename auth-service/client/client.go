@@ -1,70 +1,90 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 
+	"github.com/darren-west/app/utils/httputil"
 	"github.com/darren-west/app/utils/jwt"
+	"github.com/go-resty/resty"
+	"github.com/hashicorp/errwrap"
 )
 
-func WithTargetAddress(target string) Option {
+// WithBaseAddress is the base address for the client to use.
+// An example is http://localhost/api
+func WithBaseAddress(base string) Option {
 	return func(s *Service) {
-		s.TargetAddress = target
+		if len(base) > 0 && base[len(base)-1] == '/' {
+			s.base = base[:len(base)-1]
+			return
+		}
+		s.base = base
 	}
 }
 
-func WithHTTPClient(httpClient *http.Client) Option {
+// WithRoundTripper sets the http round tripper to use in the client.
+func WithRoundTripper(roundTripper http.RoundTripper) Option {
 	return func(s *Service) {
-		s.httpClient = httpClient
+		s.httpClient.SetTransport(roundTripper)
 	}
 }
 
+// WithRetryCount sets the number of times to retry.
+func WithRetryCount(retries int) Option {
+	return func(s *Service) {
+		s.httpClient.SetRetryCount(retries)
+	}
+}
+
+// Option is a function for setting options on the Service.
 type Option func(*Service)
 
+// New returns a new client to the auth service.
 func New(opts ...Option) Service {
 	s := Service{
-		httpClient:    http.DefaultClient,
-		TargetAddress: "http://localhost/api/auth",
+		httpClient: resty.New(),
+		base:       "http://localhost/api/auth",
 	}
 	for _, opt := range opts {
 		opt(&s)
 	}
+	s.httpClient.AddRetryCondition(resty.RetryConditionFunc(func(resp *resty.Response) (bool, error) {
+		return resp.StatusCode() < 200 || resp.StatusCode() > 399, nil
+	}))
 	return s
 }
 
+// Service is a client to the auth service.
 type Service struct {
-	httpClient    *http.Client
-	TargetAddress string
+	httpClient *resty.Client
+	base       string
 }
 
-func (s Service) ExchangeToken(ctx context.Context, user jwt.User) (string, error) {
-	buf := &bytes.Buffer{}
-	if err := json.NewEncoder(buf).Encode(&user); err != nil {
-		return "", err
+// ExchangeToken returns a signed jwt token for the user given. It is signed in the auth service.
+func (s Service) ExchangeToken(ctx context.Context, user jwt.User) (token string, err error) {
+	if token, err = s.exchangeToken(ctx, user); err != nil {
+		err = errwrap.Wrapf("exchange token failed: {{err}}", err)
+		return
 	}
-	req, err := s.newRequest(http.MethodPost, "token", buf)
-	if err != nil {
-		return "", err
-	}
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
+	return
 }
 
-func (s Service) newRequest(method string, path string, body io.Reader) (req *http.Request, err error) {
-	return http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", s.TargetAddress, path), body)
+func (s Service) exchangeToken(ctx context.Context, user jwt.User) (string, error) {
+	resp, err := s.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(&user).
+		SetContext(ctx).
+		Post(s.pathf("/%s", "token"))
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return "", httputil.NewError(resp.StatusCode()).WithMessage(string(resp.Body()))
+	}
+	return string(resp.Body()), nil
+}
+
+func (s Service) pathf(format string, args ...interface{}) string {
+	return s.base + fmt.Sprintf(format, args...)
 }

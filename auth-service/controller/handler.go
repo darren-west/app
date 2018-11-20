@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -30,6 +31,9 @@ func (h Handler) ExchangeToken(w http.ResponseWriter, r *http.Request, _ httprou
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		return httputil.NewError(http.StatusInternalServerError).WithError(err)
 	}
+	if err := isUserValid(user); err != nil {
+		return httputil.NewError(http.StatusBadRequest).WithError(err)
+	}
 	token, err := h.Writer.Write(&jwt.Claims{
 		User:      user,
 		ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
@@ -40,4 +44,11 @@ func (h Handler) ExchangeToken(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 	fmt.Fprintf(w, "%s", token)
 	return nil
+}
+
+func isUserValid(user jwt.User) (err error) {
+	if user.ID == "" {
+		return errors.New("user id is empty")
+	}
+	return
 }

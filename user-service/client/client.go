@@ -1,184 +1,178 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/darren-west/app/user-service/models"
+	"github.com/darren-west/app/utils/httputil"
+	"github.com/go-resty/resty"
+	"github.com/hashicorp/errwrap"
 )
 
-func WithTargetAddress(target string) Option {
+// WithBaseAddress sets the base address to communicate with.
+// for example http://localhost/api
+func WithBaseAddress(base string) Option {
 	return func(s *Service) {
-		s.options.TargetAddress = target
+		if len(base) > 0 && base[len(base)-1] == '/' {
+			s.base = base[:len(base)-1]
+			return
+		}
+		s.base = base
 	}
 }
 
-func WithHTTPClient(c *http.Client) Option {
+// WithRoundTripper sets the http round trip interface to use.
+func WithRoundTripper(roundTripper http.RoundTripper) Option {
 	return func(s *Service) {
-		s.httpClient = c
+		s.httpClient.SetTransport(roundTripper)
 	}
 }
 
+// WithRetryCount sets the number of retries before failing.
+func WithRetryCount(retries int) Option {
+	return func(s *Service) {
+		s.httpClient.SetRetryCount(retries)
+	}
+}
+
+// Option is a function for setting the options in the service.
 type Option func(*Service)
 
+// New returns a new service client for the user service.
 func New(ops ...Option) Service {
 	s := Service{
-		options: Options{
-			TargetAddress: "http://localhost",
-		},
-		httpClient: http.DefaultClient,
+		base:       "http://localhost",
+		httpClient: resty.New(),
 	}
 	for _, op := range ops {
 		op(&s)
 	}
+	s.httpClient.AddRetryCondition(resty.RetryConditionFunc(func(resp *resty.Response) (bool, error) {
+		return resp.StatusCode() < 200 || resp.StatusCode() > 399, nil
+	}))
 	return s
 }
 
-type Options struct {
-	TargetAddress string
-}
-
+// Service is a client to the user service.
 type Service struct {
-	options    Options
-	httpClient *http.Client
+	httpClient *resty.Client
+	base       string
 }
 
+func (s Service) pathf(format string, args ...interface{}) string {
+	return s.base + fmt.Sprintf(format, args...)
+}
+
+// CreateUser creates a user.
 func (s Service) CreateUser(ctx context.Context, user models.UserInfo) (err error) {
-	buf := new(bytes.Buffer)
-	if err = json.NewEncoder(buf).Encode(&user); err != nil {
+	err = func(ctx context.Context, user models.UserInfo) (err error) {
+		resp, err := s.httpClient.R().
+			SetHeader("Content-Type", "application/json").
+			SetBody(&user).
+			SetContext(ctx).
+			Post(s.pathf("/%s", "users"))
+		if err != nil {
+			return
+		}
+		if httpErr := handleError(http.StatusCreated, resp); httpErr != nil {
+			return httpErr
+		}
 		return
-	}
-	req, err := s.newRequest(ctx, http.MethodPost, "users", buf)
+	}(ctx, user)
 	if err != nil {
-		return
-	}
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return
-	}
-	if httpErr := HandleError(http.StatusCreated, resp); httpErr != nil {
-		return httpErr
+		return errwrap.Wrapf("create user failed: {{err}}", err)
 	}
 	return
 }
 
+// GetUser return the user with the id given.
 func (s Service) GetUser(ctx context.Context, id string) (user models.UserInfo, err error) {
-	req, err := s.newRequest(ctx, http.MethodGet, fmt.Sprintf("users/%s", id), nil)
-	if err != nil {
+	user, err = func(ctx context.Context, id string) (user models.UserInfo, err error) {
+		resp, err := s.httpClient.R().
+			SetResult(&user).
+			SetContext(ctx).
+			Get(s.pathf("/%s/%s", "users", id))
+		if httpErr := handleError(http.StatusOK, resp); httpErr != nil {
+			return user, httpErr
+		}
 		return
-	}
-	resp, err := s.httpClient.Do(req)
+	}(ctx, id)
 	if err != nil {
-		return
-	}
-	if httpErr := HandleError(http.StatusOK, resp); httpErr != nil {
-		return user, httpErr
-	}
-	if err = json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		err = errwrap.Wrapf("get user failed: {{err}}", err)
 		return
 	}
 	return
 }
 
+// IsNotFoundError returns true if the error is a not found error. i.e. the user is not found.
 func IsNotFoundError(err error) bool {
-	if e, ok := err.(*Error); ok {
-		if e.StatusCode == http.StatusNotFound {
+	if e, ok := err.(httputil.Error); ok {
+		if e.StatusCode() == http.StatusNotFound {
 			return true
 		}
 	}
 	return false
 }
 
+// ListUsers returns all the users.
+// TODO: implement filtering.
 func (s Service) ListUsers(ctx context.Context) (users []models.UserInfo, err error) {
-	req, err := s.newRequest(ctx, http.MethodGet, "users", nil)
-	if err != nil {
+	users, err = func(ctx context.Context) (users []models.UserInfo, err error) {
+		resp, err := s.httpClient.R().
+			SetResult(&users).
+			SetContext(ctx).
+			Get(s.pathf("/%s", "users"))
+		if httpErr := handleError(http.StatusOK, resp); httpErr != nil {
+			return nil, httpErr
+		}
 		return
-	}
-	resp, err := s.httpClient.Do(req)
+	}(ctx)
 	if err != nil {
-		return
-	}
-	if httpErr := HandleError(http.StatusOK, resp); httpErr != nil {
-		return nil, httpErr
-	}
-	if err = json.NewDecoder(resp.Body).Decode(&users); err != nil {
+		err = errwrap.Wrapf("list users failed: {{err}}", err)
 		return
 	}
 	return
 }
 
+// UpdateUser updates the user. The ID in the user is used to update the user in the service.
 func (s Service) UpdateUser(ctx context.Context, user models.UserInfo) (err error) {
-	buf := new(bytes.Buffer)
-	if err = json.NewEncoder(buf).Encode(&user); err != nil {
+	err = func(ctx context.Context, user models.UserInfo) (err error) {
+		resp, err := s.httpClient.R().
+			SetHeader("Content-Type", "application/json").
+			SetBody(&user).
+			SetContext(ctx).
+			Put(s.pathf("/%s/%s", "users", user.ID))
+		if httpErr := handleError(http.StatusOK, resp); httpErr != nil {
+			return httpErr
+		}
 		return
-	}
-	req, err := s.newRequest(ctx, http.MethodPut, fmt.Sprintf("users/%s", user.ID), buf)
+	}(ctx, user)
 	if err != nil {
-		return
-	}
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return
-	}
-	if httpErr := HandleError(http.StatusOK, resp); httpErr != nil {
-		return httpErr
+		return errwrap.Wrapf("update user failed: {{err}}", err)
 	}
 	return
 }
 
+// DeleteUser removes the user in the service.
 func (s Service) DeleteUser(ctx context.Context, id string) (err error) {
-	req, err := s.newRequest(ctx, http.MethodDelete, fmt.Sprintf("users/%s", id), nil)
-	if err != nil {
+	err = func(ctx context.Context, id string) (err error) {
+		resp, err := s.httpClient.R().SetContext(ctx).Delete(s.pathf("/%s/%s", "users", id))
+		if httpErr := handleError(http.StatusOK, resp); httpErr != nil {
+			return httpErr
+		}
 		return
-	}
-	resp, err := s.httpClient.Do(req)
+	}(ctx, id)
 	if err != nil {
-		return
-	}
-	if httpErr := HandleError(http.StatusOK, resp); httpErr != nil {
-		return httpErr
+		return errwrap.Wrapf("delete user failed: {{err}}", err)
 	}
 	return
 }
 
-type Error struct {
-	StatusCode int
-	Message    string
-}
-
-func (e *Error) Error() string {
-	if e.Message == "" {
-		return fmt.Sprintf("status code %d", e.StatusCode)
-	}
-	return fmt.Sprintf("status code %d, message %s", e.StatusCode, e.Message)
-}
-
-func HandleError(expected int, resp *http.Response) *Error {
-	if resp.StatusCode != expected {
-		httpErr := &Error{
-			StatusCode: resp.StatusCode,
-		}
-		if resp.Body != nil {
-			data, err := ioutil.ReadAll(resp.Body)
-			if err == nil {
-				httpErr.Message = string(data)
-			}
-		}
-		return httpErr
+func handleError(expected int, resp *resty.Response) httputil.Error {
+	if resp.StatusCode() != expected {
+		return httputil.NewError(resp.StatusCode()).WithMessage("%s, code %d", string(resp.Body()), resp.StatusCode())
 	}
 	return nil
-}
-
-func (s Service) newRequest(ctx context.Context, method string, path string, r io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, fmt.Sprintf("%s/%s", s.options.TargetAddress, path), r)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	return req.WithContext(ctx), nil
 }
